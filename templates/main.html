@@ -1,0 +1,61 @@
+<html>
+<head>
+    <title>flask</title>
+</head>
+<body>
+    {% if 'ADMIN' in user['roles'] %}
+    <a href="/users">Zarządzaj piowoszami</a>
+    {% endif %}
+    <a href="/logout">Wyloguj</a>
+    </br>
+    <img src="{{url_for('static', filename='/odpowiedzialnosc1.jpg')}}">
+    </br>
+    <img src="{{url_for('static', filename='/odpowiedzialnosc2.jpg')}}">
+    </br>
+    </br>
+    <h2>Dodaj piwo:</h2>
+    <form method="POST" action="/">
+        <div>
+            <label for='brand'>Marka</label>
+            <input type='text' name='brand' id='brand'>
+        </div>
+        <div>
+            <label for='author'>%</label>
+            <input type='number' step="0.1" name='percent' id='percent'>
+        </div>
+        <div>
+            <label for='rating'>Ocena</label>
+            <input type='number' step="0.1" name='rating' id='rating'>
+        </div>
+        <div>
+            <label for='price'>Cena</label>
+            <input type='number' step="0.01" name='price' id='price'>
+        </div>
+        <button type='submit'>Dodaj piwo</button>
+    </form>
+    </br>
+    <h2>Dostępne piwa:</h2>
+    <table>
+        <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Marka</th>
+            <th scope="col">%</th>
+            <th scope="col">Ocena</th>
+            <th scope="col">Cena</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for beer in beers %}
+        <tr>
+            <th scope="row">{{loop.index}}</th>
+            <td>{{beer[0]}}</td>
+            <td>{{beer[1]}}</td>
+            <td>{{beer[2]}}</td>
+            <td>{{beer[3]}}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

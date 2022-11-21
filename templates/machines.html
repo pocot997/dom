@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS and icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+
+    <title>pc-manager: machines</title>
+</head>
+<body>
+    <!-- Bootstrap Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #4c022d;">
+        <div class="container">
+            <a class="navbar-brand me-5" href="#">pc-manager</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                    aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <div class="navbar-nav">
+                    <hr class="bg-light"/>
+                    <a class="nav-link active" aria-current="page" href="#">Machines</a>
+                    <a class="nav-link" href="/credentials">Credentials</a>
+                    <a class="nav-link" href="/custom_operations">Custom operations</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        {% if machines.items %}
+        <div class="d-flex flex-row mb-4 justify-content-between">
+            <h3>Managing {{machines.total}} machines:</h3>
+            <a href="/add_machine" class="btn btn-primary">Add machine</a>
+        </div>
+
+        <table class="table table-striped border">
+            <thead class="thead-light">
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col">Place</th>
+                <th scope="col">Hardware</th>
+                <th scope="col">Software platforms</th>
+                <th scope="col">Last status</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody class="accordion-flush">
+            {% for machine in machines.items %}
+            <tr class="accordion-header collapsed">
+                <th scope="row">{{loop.index}}</th>
+                <td data-bs-toggle="collapse" data-bs-target="#details{{machine.id}}">
+                    <span class="d-flex flex-row flex-nowrap">
+                        <i class="bi-chevron-right me-2"></i>{{machine.name}}
+                    </span>
+                </td>
+                <td>{{machine.place}}</td>
+                <td>{{machine.hardware_features.READABLE_NAME if machine.hardware_features else 'none'}}</td>
+                <td>{{machine.software_platforms|length}}</td>
+                <td>
+                    {{machine.last_status.value}} ({{display_duration(machine.last_status_time)}} ago)
+                </td>
+                <td class="d-flex flex-row flex-wrap justify-content-end">
+                    <a href="/execute_action/{{machine.id}}" class="btn btn-primary m-1">Execute action</a>
+                    <button class="btn btn-primary dropdown-toggle m-1" type="button" id="changeStatusDropdown"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        Change status
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="changeStatusDropdown">
+                        <a class="dropdown-item" href="/change_status/{{machine.id}}?target_status=POWER_ON">Power on</a>
+                        <a class="dropdown-item" href="/change_status/{{machine.id}}?target_status=POWER_OFF">Power off</a>
+                        <a class="dropdown-item" href="/change_status/{{machine.id}}?target_status=SUSPENDED">Suspended</a>
+                    </ul>
+                    <a href="/edit_machine/{{machine.id}}" class="btn btn-secondary m-1">Edit</a>
+                    <a href="/delete_machine/{{machine.id}}" class="btn btn-danger m-1">Delete</a>
+                </td>
+            </tr>
+            <tr class="accordion-collapse collapse" id="details{{machine.id}}">
+                <td colspan="6" class="accordion-body">
+                    {% if machine.hardware_features %}
+                    Hardware features: {{machine.hardware_features.READABLE_NAME}}
+                    <ul>
+                        {% for name, property in machine.hardware_features.get_properties().items() %}
+                        <li>{{name}}: {{property}}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+
+                    {% if machine.software_platforms %}
+                    Software platforms:
+                    <ul>
+                        {% for platform in machine.software_platforms %}
+                        <li>
+                            {{platform.READABLE_NAME}}
+                            <ul>
+                                {% for name, property in platform.get_properties().items() %}
+                                <li>{{name}}: {{property}}</li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+
+                    {% if machine.custom_operations %}
+                    Custom operations:
+                    <ul>
+                    {% for custom_op in machine.custom_operations %}
+                        <li>
+                            {{custom_op.name}} - {{custom_op.description}}
+                        </li>
+                    {% endfor %}
+                    </ul>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <nav>
+            <ul class="pagination justify-content-end">
+                <li class="page-item {{'' if machines.has_prev else 'disabled'}}">
+                    {% if machines.has_prev %}
+                    <a class="page-link" href="?page={{machines.prev_num}}">Previous</a>
+                    {% else %}
+                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                    {% endif %}
+                </li>
+                {%- for page in machines.iter_pages() %}
+                {% if page %}
+                {% if page != machines.page %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{page}}">{{page}}</a>
+                </li>
+                {% else %}
+                <li class="page-item active">
+                    <a class="page-link" href="#" aria-current="page">{{page}}</a>
+                </li>
+                {% endif %}
+                {% endif %}
+                {%- endfor %}
+                <li class="page-item {{'' if machines.has_next else 'disabled'}}">
+                    {% if machines.has_next %}
+                    <a class="page-link" href="?page={{machines.next_num}}">Next</a>
+                    {% else %}
+                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Next</a>
+                    {% endif %}
+                </li>
+            </ul>
+        </nav>
+        {% else %}
+        <div class="container-fluid">
+            <h3 class="mb-4">You don't have any machines yet.</h3>
+            <div class="dropdown">
+                <a href="/add_machine" class="btn btn-primary">Add machine</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
